@@ -27,6 +27,8 @@ namespace RedisAdmin
 
         private IRedisClientsManager ClientManager { get; set; }
 
+        private UrnFilterDialog UrnFilterDialog { get; set; }
+
         /// <summary>
         /// Holds the original value of a DataGridView 
         /// cell before it was edited.
@@ -44,6 +46,11 @@ namespace RedisAdmin
         public Main()
         {
             InitializeComponent();
+
+            this.UrnFilterDialog = new UrnFilterDialog
+            {
+                StartPosition = FormStartPosition.CenterParent
+            };
 
             this.LoadSettings();
             this.Tabs.HideTab( this.stringValueTab );
@@ -115,9 +122,7 @@ namespace RedisAdmin
                     c.Password = decrypt( Convert.FromBase64String( c.EncryptedPassword ), Convert.FromBase64String( AesKey ), Convert.FromBase64String( AesIV ) );
                 }
             }
-            catch( Exception ex )
-            {
-            }
+            catch { }
         }
 
         private void Connect()
@@ -167,8 +172,11 @@ namespace RedisAdmin
             }
         }
 
-        public void LoadUrnList( string SelectUrn = null )
+        public void LoadUrnList()
         {
+            var selected = this.keyList.SelectedNode;
+            var SelectUrn = selected != null ? selected.Name : null;
+
             using( var client = this.ClientManager.GetClient() )
             {
                 this.keyList.Nodes.Clear();
@@ -177,62 +185,56 @@ namespace RedisAdmin
                 {
                     var n = int.Parse( dbRegex.Match( d.Key ).Groups["dbnum"].Value );
                     var c = int.Parse( keysRegex.Match( d.Value ).Groups["keynum"].Value );
-                    var db = new TreeNode( d.Key + " (" + c + ")", 0, 0 );
+                    var db = new TreeNodeEx( d.Key + " (" + c + ")", 0, 0 );
                     client.Db = n;
 
                     foreach( var k in client.GetAllKeys() )
                     {
-                        TreeNode key;
-
                         switch( client.GetEntryType( k ) )
                         {
                             case RedisKeyType.String:
-                                key = new TreeNode( k, 1, 1 )
+                                db.Nodes.Add( new TreeNodeEx( k, 1, 1 )
                                 {
                                     Name = k
-                                };
+                                } );
                                 break;
 
                             case RedisKeyType.List:
                                 var listCount = client.GetListCount( k );
-                                key = new TreeNode( k + " (" + listCount.ToString( "N0" ) + ")", 2, 2 )
+                                db.Nodes.Add( new TreeNodeEx( k + " (" + listCount.ToString( "N0" ) + ")", 2, 2 )
                                 {
                                     Name = k
-                                };
+                                } );
                                 break;
 
                             case RedisKeyType.Set:
                                 var setCount = client.GetSetCount( k );
-                                key = new TreeNode( k + " (" + setCount.ToString( "N0" ) + ")", 3, 3 )
+                                db.Nodes.Add( new TreeNodeEx( k + " (" + setCount.ToString( "N0" ) + ")", 3, 3 )
                                 {
                                     Name = k
-                                };
+                                } );
                                 break;
 
                             case RedisKeyType.SortedSet:
-                                var sortedSetCount = client.GetSetCount( k );
-                                key = new TreeNode( k + " (" + sortedSetCount.ToString( "N0" ) + ")", 4, 4 )
+                                var sortedSetCount = client.GetSortedSetCount( k );
+                                db.Nodes.Add( new TreeNodeEx( k + " (" + sortedSetCount.ToString( "N0" ) + ")", 4, 4 )
                                 {
                                     Name = k
-                                };
+                                } );
                                 break;
 
                             case RedisKeyType.Hash:
-                                key = new TreeNode( k, 5, 5 )
+                                var key = new TreeNodeEx( k, 5, 5 )
                                 {
                                     Name = k
                                 };
                                 foreach( var h in client.GetHashKeys( k ) )
                                 {
-                                    key.Nodes.Add( new TreeNode( h, 6, 6 ) );
+                                    key.Nodes.Add( new TreeNodeEx( h, 6, 6 ) );
                                 }
+                                db.Nodes.Add( key );
                                 break;
-
-                            default:
-                                continue;
                         }
-
-                        db.Nodes.Add( key );
                     }
 
                     this.keyList.Nodes.Add( db );
@@ -394,7 +396,7 @@ namespace RedisAdmin
             {
                 client.SetEntry( Urn, Value );
             }
-            this.LoadUrnList( Urn );
+            this.LoadUrnList();
             this.LoadUrnValue( Urn );
         }
 
@@ -413,7 +415,7 @@ namespace RedisAdmin
             {
                 client.AddItemToList( Urn, Value );
             }
-            this.LoadUrnList( Urn );
+            this.LoadUrnList();
             this.LoadUrnValue( Urn );
         }
 
@@ -423,7 +425,7 @@ namespace RedisAdmin
             {
                 client.AddItemToSet( Urn, Value );
             }
-            this.LoadUrnList( Urn );
+            this.LoadUrnList();
             this.LoadUrnValue( Urn );
         }
 
@@ -433,11 +435,11 @@ namespace RedisAdmin
             {
                 client.AddItemToSortedSet( Urn, Value );
             }
-            this.LoadUrnList( Urn );
+            this.LoadUrnList();
             this.LoadUrnValue( Urn );
         }
 
-        public void SetListValue( string Urn, int Index, string Value )
+        public void SetListValue( string Urn, int Index, string Original, string Value )
         {
             using( var client = this.ClientManager.GetClient() )
             {
@@ -445,22 +447,18 @@ namespace RedisAdmin
                 {
                     case RedisKeyType.List:
                         if( Index >= client.GetListCount( Urn ) )
-                        {
                             client.AddItemToList( Urn, Value );
-                        }
                         else
-                        {
                             client.SetItemInList( Urn, Index, Value );
-                        }
                         break;
 
                     case RedisKeyType.Set:
-                        client.RemoveItemFromSet( Urn, Value );
+                        client.RemoveItemFromSet( Urn, Original );
                         client.AddItemToSet( Urn, Value );
                         break;
 
                     case RedisKeyType.SortedSet:
-                        client.RemoveItemFromSortedSet( Urn, Value );
+                        client.RemoveItemFromSortedSet( Urn, Original );
                         client.AddItemToSortedSet( Urn, Value );
                         break;
                 }
@@ -498,7 +496,7 @@ namespace RedisAdmin
             {
                 client.SetEntryInHash( Urn, Key, Value );
             }
-            this.LoadUrnList( Urn );
+            this.LoadUrnList();
         }
 
         public void SetHashKeyValue( string Urn, string Key, string Value )
@@ -515,7 +513,7 @@ namespace RedisAdmin
             {
                 client.RemoveEntryFromHash( Urn, Key );
             }
-            this.LoadUrnList( Urn );
+            this.LoadUrnList();
         }
 
         public void DeleteKey( string Urn )
@@ -525,7 +523,7 @@ namespace RedisAdmin
                 client.Remove( Urn );
             }
 
-            this.LoadUrnList( Urn );
+            this.LoadUrnList();
         }
 
         #region Helpers
@@ -645,20 +643,6 @@ namespace RedisAdmin
             var node = this.keyList.SelectedNode;
             return node != null && node.Level == 1 ? node.Name : null;
         }
-
-        public class Settings
-        {
-            public int X { get; set; }
-            public int Y { get; set; }
-            public int Width { get; set; }
-            public int Height { get; set; }
-            public int SplitterDistance { get; set; }
-
-            public bool SaveHostPort { get; set; }
-            public bool SavePasswords { get; set; }
-
-            public List<RedisCredentials> RedisCredentials { get; set; }
-        }
         #endregion
 
         #region Event Handlers
@@ -699,12 +683,17 @@ namespace RedisAdmin
             this.SetStringValue( key, this.txtStringKeyValue.Text );
         }
 
+        private void dgListKeyValue_CellBeginEdit( object sender, DataGridViewCellCancelEventArgs e )
+        {
+            this.OriginalValue = this.dgListKeyValue[e.ColumnIndex, e.RowIndex].Value.ToString();
+        }
+
         private void dgListKeyValue_CellValueChanged( object sender, DataGridViewCellEventArgs e )
         {
             var key = this.GetSelectedUrn();
             if( key == null ) return;
             var value = this.dgListKeyValue.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString();
-            this.SetListValue( key, e.RowIndex, value );
+            this.SetListValue( key, e.RowIndex, this.OriginalValue, value );
         }
 
         private void dgListKeyValue_UserDeletingRow( object sender, DataGridViewRowCancelEventArgs e )
@@ -796,20 +785,31 @@ namespace RedisAdmin
 
             this.DeleteHashKeyValue( urn, c0Value );
         }
+
+        private void filterButton_Click( object sender, EventArgs e )
+        {
+            if( this.UrnFilterDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK ) return;
+
+            var filter = this.UrnFilterDialog.Filter.ToLower();
+            foreach( var db in keyList.Nodes.Cast<TreeNodeEx>() )
+            {
+                db.ShowAll();
+                if( string.IsNullOrEmpty( filter ) ) continue;
+
+                foreach( var Node in db.Nodes.Cast<TreeNodeEx>().ToList() )
+                {
+                    if( !Node.Name.ToLower().Contains( filter ) )
+                    {
+                        db.HideNode( Node );
+                    }
+                }
+            }
+        }
+
+        private void disconnectButton_Click( object sender, EventArgs e )
+        {
+            this.Disconnect();
+        }
         #endregion
-    }
-
-    public class RedisCredentials
-    {
-        public string Name { get; set; }
-
-        public string Host { get; set; }
-
-        public int Port { get; set; }
-
-        [XmlIgnore]
-        public string Password { get; set; }
-
-        public string EncryptedPassword { get; set; }
     }
 }

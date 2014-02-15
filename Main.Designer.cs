@@ -33,7 +33,7 @@
             this.parentTable = new System.Windows.Forms.TableLayoutPanel();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.leftPaneTable = new System.Windows.Forms.TableLayoutPanel();
-            this.keyList = new System.Windows.Forms.TreeView();
+            this.keyList = new RedisAdmin.TreeViewEx();
             this.keyTypeImageList = new System.Windows.Forms.ImageList(this.components);
             this.leftPaneTopButtonTable = new System.Windows.Forms.TableLayoutPanel();
             this.connectButton = new System.Windows.Forms.Button();
@@ -220,6 +220,7 @@
             this.disconnectButton.Size = new System.Drawing.Size(45, 34);
             this.disconnectButton.TabIndex = 1;
             this.disconnectButton.UseVisualStyleBackColor = true;
+            this.disconnectButton.Click += new System.EventHandler(this.disconnectButton_Click);
             // 
             // filterButton
             // 
@@ -230,6 +231,7 @@
             this.filterButton.Size = new System.Drawing.Size(45, 34);
             this.filterButton.TabIndex = 2;
             this.filterButton.UseVisualStyleBackColor = true;
+            this.filterButton.Click += new System.EventHandler(this.filterButton_Click);
             // 
             // refreshButton
             // 
@@ -767,6 +769,7 @@
             this.dgListKeyValue.ShowRowErrors = false;
             this.dgListKeyValue.Size = new System.Drawing.Size(388, 428);
             this.dgListKeyValue.TabIndex = 1;
+            this.dgListKeyValue.CellBeginEdit += new System.Windows.Forms.DataGridViewCellCancelEventHandler(this.dgListKeyValue_CellBeginEdit);
             this.dgListKeyValue.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgListKeyValue_CellValueChanged);
             this.dgListKeyValue.UserDeletingRow += new System.Windows.Forms.DataGridViewRowCancelEventHandler(this.dgListKeyValue_UserDeletingRow);
             // 
@@ -865,7 +868,7 @@
         private System.Windows.Forms.TableLayoutPanel parentTable;
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.TableLayoutPanel leftPaneTable;
-        private System.Windows.Forms.TreeView keyList;
+        private TreeViewEx keyList;
         private System.Windows.Forms.TableLayoutPanel leftPaneTopButtonTable;
         private System.Windows.Forms.Button connectButton;
         private System.Windows.Forms.Button disconnectButton;
