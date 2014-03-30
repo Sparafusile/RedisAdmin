@@ -753,6 +753,7 @@
             this.deleteListKey.TabIndex = 0;
             this.deleteListKey.Text = "Delete Entire Key";
             this.deleteListKey.UseVisualStyleBackColor = true;
+            this.deleteListKey.Click += new System.EventHandler(this.deleteKey_Click);
             // 
             // dgListKeyValue
             // 

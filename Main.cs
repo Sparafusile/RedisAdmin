@@ -268,6 +268,26 @@ namespace RedisAdmin
 
                 this.LoadStats( client.Info );
             }
+
+            FilterUrnList();
+        }
+
+        public void FilterUrnList()
+        {
+            var filter = this.UrnFilterDialog.Filter.ToLower();
+            foreach( var db in keyList.Nodes.Cast<TreeNodeEx>() )
+            {
+                db.ShowAll();
+                if( string.IsNullOrEmpty( filter ) ) continue;
+
+                foreach( var Node in db.Nodes.Cast<TreeNodeEx>().ToList() )
+                {
+                    if( !Node.Name.ToLower().Contains( filter ) )
+                    {
+                        db.HideNode( Node );
+                    }
+                }
+            }
         }
 
         public void LoadStats( Dictionary<string,string> Stats = null )
@@ -790,20 +810,7 @@ namespace RedisAdmin
         {
             if( this.UrnFilterDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK ) return;
 
-            var filter = this.UrnFilterDialog.Filter.ToLower();
-            foreach( var db in keyList.Nodes.Cast<TreeNodeEx>() )
-            {
-                db.ShowAll();
-                if( string.IsNullOrEmpty( filter ) ) continue;
-
-                foreach( var Node in db.Nodes.Cast<TreeNodeEx>().ToList() )
-                {
-                    if( !Node.Name.ToLower().Contains( filter ) )
-                    {
-                        db.HideNode( Node );
-                    }
-                }
-            }
+            this.LoadUrnList();
         }
 
         private void disconnectButton_Click( object sender, EventArgs e )
