@@ -79,7 +79,7 @@ namespace RedisAdmin
                 if( settings.SavePasswords )
                 {
                     // Convert the actual password to a AES encrypted version to save in the file
-                    foreach( var c in this.RedisCredentials )
+                    foreach( var c in this.RedisCredentials.Where( m => !string.IsNullOrEmpty( m.Password ) ) )
                     {
                         c.EncryptedPassword = Convert.ToBase64String( encrypt( c.Password, Convert.FromBase64String( AesKey ), Convert.FromBase64String( AesIV ) ) );
                     }
@@ -274,7 +274,7 @@ namespace RedisAdmin
 
         public void FilterUrnList()
         {
-            var filter = this.UrnFilterDialog.Filter.ToLower();
+            var filter = ( this.UrnFilterDialog.Filter ?? string.Empty ).ToLower();
             foreach( var db in keyList.Nodes.Cast<TreeNodeEx>() )
             {
                 db.ShowAll();
@@ -532,8 +532,11 @@ namespace RedisAdmin
             using( var client = this.ClientManager.GetClient() )
             {
                 client.RemoveEntryFromHash( Urn, Key );
+                if( !client.GetHashKeys( Urn ).Any() )
+                {
+                    this.keyList.Nodes.Remove( this.keyList.SelectedNode );
+                }
             }
-            this.LoadUrnList();
         }
 
         public void DeleteKey( string Urn )
@@ -543,7 +546,7 @@ namespace RedisAdmin
                 client.Remove( Urn );
             }
 
-            this.LoadUrnList();
+            this.keyList.Nodes.Remove( this.keyList.SelectedNode );
         }
 
         #region Helpers
