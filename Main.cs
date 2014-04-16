@@ -135,6 +135,18 @@ namespace RedisAdmin
             this.ClientManager = null;
             this.Credentials = null;
             this.keyList.Nodes.Clear();
+            this.Text = @"Redis Administrator";
+
+            this.lblHostName.Text = null;
+            this.lblPortNumber.Text = null;
+            this.lblRedisVersion.Text = null;
+            this.lblUptimeSeconds.Text = null;
+            this.lblUptimeDays.Text = null;
+            this.lblMemoryUsage.Text = null;
+            this.lblPeakMemoryUsage.Text = null;
+            this.lblServerRole.Text = null;
+            this.lblDatabaseCount.Text = null;
+            this.lblKeyCount.Text = null;
         }
 
         public void Authorize( RedisCredentials c )
@@ -163,6 +175,7 @@ namespace RedisAdmin
             try
             {
                 this.ClientManager = new PooledRedisClientManager( CreateRedisUrl( c.Host, c.Port, c.Password ) );
+                this.Text = @"Redis Administrator - " + c.Host + @":" + c.Port;
                 this.Credentials = c;
                 this.LoadUrnList();
             }
@@ -280,12 +293,9 @@ namespace RedisAdmin
                 db.ShowAll();
                 if( string.IsNullOrEmpty( filter ) ) continue;
 
-                foreach( var Node in db.Nodes.Cast<TreeNodeEx>().ToList() )
+                foreach( var Node in db.Nodes.Cast<TreeNodeEx>().ToList().Where( Node => Node.Name.IndexOf( filter, StringComparison.OrdinalIgnoreCase ) < 0 ) )
                 {
-                    if( !Node.Name.ToLower().Contains( filter ) )
-                    {
-                        db.HideNode( Node );
-                    }
+                    db.HideNode( Node );
                 }
             }
         }
@@ -549,6 +559,17 @@ namespace RedisAdmin
             this.keyList.Nodes.Remove( this.keyList.SelectedNode );
         }
 
+        public void FlushAll()
+        {
+            using( var client = this.ClientManager.GetClient() )
+            {
+                client.FlushAll();
+            }
+
+            this.LoadUrnList();
+            this.LoadStats();
+        }
+
         #region Helpers
         #region Hashing and Encryption
         private static string HashSha2( string str )
@@ -682,6 +703,14 @@ namespace RedisAdmin
         private void refreshStats_Click( object sender, EventArgs e )
         {
             this.LoadStats();
+        }
+
+        private void flushAllKeys_Click( object sender, EventArgs e )
+        {
+            if( MessageBox.Show( @"Are you sure you want to flush all keys? This will permanently delete everything with no way to recover the data.", @"Please confirm", MessageBoxButtons.YesNo ) == System.Windows.Forms.DialogResult.Yes )
+            {
+                this.FlushAll();
+            }
         }
 
         private void keyList_AfterSelect( object sender, TreeViewEventArgs e )

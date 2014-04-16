@@ -83,6 +83,7 @@
             this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
             this.deleteHashKey = new System.Windows.Forms.Button();
             this.dgHashKeyValue = new System.Windows.Forms.DataGridView();
+            this.flushAllKeys = new System.Windows.Forms.Button();
             this.parentTable.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
@@ -371,10 +372,11 @@
             this.tableLayoutPanel2.Controls.Add(this.label7, 0, 0);
             this.tableLayoutPanel2.Controls.Add(this.label10, 0, 5);
             this.tableLayoutPanel2.Controls.Add(this.lblUptimeDays, 1, 5);
+            this.tableLayoutPanel2.Controls.Add(this.flushAllKeys, 0, 12);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel2.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
-            this.tableLayoutPanel2.RowCount = 13;
+            this.tableLayoutPanel2.RowCount = 14;
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 35F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 35F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 35F));
@@ -386,6 +388,7 @@
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 35F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 35F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel2.Size = new System.Drawing.Size(388, 468);
@@ -452,6 +455,7 @@
             this.refreshStats.TabIndex = 18;
             this.refreshStats.Text = "Refresh Stats";
             this.refreshStats.UseVisualStyleBackColor = true;
+            this.refreshStats.Click += new System.EventHandler(this.refreshStats_Click);
             // 
             // label9
             // 
@@ -830,6 +834,19 @@
             this.dgHashKeyValue.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgHashKeyValue_CellValueChanged);
             this.dgHashKeyValue.UserDeletingRow += new System.Windows.Forms.DataGridViewRowCancelEventHandler(this.dgHashKeyValue_UserDeletingRow);
             // 
+            // flushAllKeys
+            // 
+            this.flushAllKeys.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.tableLayoutPanel2.SetColumnSpan(this.flushAllKeys, 2);
+            this.flushAllKeys.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.flushAllKeys.Location = new System.Drawing.Point(3, 413);
+            this.flushAllKeys.Name = "flushAllKeys";
+            this.flushAllKeys.Size = new System.Drawing.Size(382, 34);
+            this.flushAllKeys.TabIndex = 25;
+            this.flushAllKeys.Text = "Flush All Keys";
+            this.flushAllKeys.UseVisualStyleBackColor = true;
+            this.flushAllKeys.Click += new System.EventHandler(this.flushAllKeys_Click);
+            // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -919,6 +936,7 @@
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel5;
         private System.Windows.Forms.Button deleteHashKey;
         private System.Windows.Forms.DataGridView dgHashKeyValue;
+        private System.Windows.Forms.Button flushAllKeys;
     }
 }
 
