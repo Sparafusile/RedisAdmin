@@ -697,7 +697,13 @@ namespace RedisAdmin
 
         private void refreshButton_Click( object sender, EventArgs e )
         {
+            this.Tabs.HideTab( this.stringValueTab );
+            this.Tabs.HideTab( this.listValueTab );
+            this.Tabs.HideTab( this.hashValueTab );
+            this.Tabs.SelectedTab = this.statsTab;
+
             this.LoadUrnList();
+            this.LoadStats();
         }
 
         private void refreshStats_Click( object sender, EventArgs e )
