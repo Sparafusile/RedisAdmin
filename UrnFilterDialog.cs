@@ -5,7 +5,7 @@ namespace RedisAdmin
 {
     public partial class UrnFilterDialog : Form
     {
-        public string Filter { get; private set; }
+        public string Filter { get; set; }
 
         public UrnFilterDialog( string Name = null )
         {

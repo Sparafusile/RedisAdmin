@@ -2,14 +2,13 @@
 using System.IO;
 using System.Linq;
 using System.Data;
+using ServiceStack.Redis;
+using Newtonsoft.Json.Linq;
 using System.Windows.Forms;
 using System.Xml.Serialization;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
-
-using ServiceStack.Redis;
-using Newtonsoft.Json.Linq;
 
 namespace RedisAdmin
 {
@@ -122,7 +121,10 @@ namespace RedisAdmin
                     c.Password = decrypt( Convert.FromBase64String( c.EncryptedPassword ), Convert.FromBase64String( AesKey ), Convert.FromBase64String( AesIV ) );
                 }
             }
-            catch { }
+            catch
+            {
+                MessageBox.Show( @"Settings could not be loaded." );
+            }
         }
 
         private void Connect()
@@ -298,6 +300,8 @@ namespace RedisAdmin
                     db.HideNode( Node );
                 }
             }
+
+            this.flushAllKeys.Text = string.IsNullOrEmpty( filter ) ? @"Flush All Keys" : @"Flush Visible Keys";
         }
 
         public void LoadStats( Dictionary<string,string> Stats = null )
@@ -334,6 +338,15 @@ namespace RedisAdmin
 
         public void LoadUrnValue( string Urn )
         {
+            if( string.IsNullOrEmpty( Urn ) )
+            {
+                this.Tabs.HideTab( this.stringValueTab );
+                this.Tabs.HideTab( this.listValueTab );
+                this.Tabs.HideTab( this.hashValueTab );
+                this.Tabs.SelectedTab = this.statsTab;
+                return;
+            }
+
             using( var client = this.ClientManager.GetClient() )
             {
                 switch( client.GetEntryType( Urn ) )
@@ -342,6 +355,10 @@ namespace RedisAdmin
                         var value = client.GetValue( Urn );
                         if( !string.IsNullOrEmpty( value ) && ( value[0] == '[' || value[0] == '{' ) )
                         {
+                            // ServiceStack does not seem to offer a Pretty Print
+                            // for JSON strings at this time. Unfortunately, this
+                            // is the only reason Newtonsoft is included in the
+                            // project.
                             value = JToken.Parse( value ).ToString();
                         }
                         this.txtStringKeyValue.Text = value;
@@ -425,7 +442,9 @@ namespace RedisAdmin
             using( var client = this.ClientManager.GetClient() )
             {
                 client.SetEntry( Urn, Value );
+                client.Save();
             }
+
             this.LoadUrnList();
             this.LoadUrnValue( Urn );
         }
@@ -570,16 +589,25 @@ namespace RedisAdmin
             this.LoadStats();
         }
 
-        #region Helpers
-        #region Hashing and Encryption
-        private static string HashSha2( string str )
+        public void FlushUnfiltered()
         {
-            using( var sha2Hash = new SHA512Managed() )
+            using( var client = this.ClientManager.GetClient() )
             {
-                return Convert.ToBase64String( sha2Hash.ComputeHash( System.Text.Encoding.UTF8.GetBytes( str ) ) );
+                foreach( var Node in keyList.Nodes.Cast<TreeNodeEx>().SelectMany( db => db.Nodes.Cast<TreeNodeEx>() ) )
+                {
+                    // The hidden (filtered) nodes are in a private list 
+                    // so just delete all notes that are currently in the tree.
+                    client.Remove( Node.Name );
+                }
             }
+
+            this.UrnFilterDialog.Filter = string.Empty;
+            this.LoadUrnList();
+            this.LoadStats();
         }
 
+        #region Helpers
+        #region Hashing and Encryption
         public static byte[] encrypt( string plainText, byte[] key, byte[] iv )
         {
             return encrypt( System.Text.Encoding.UTF8.GetBytes( plainText ), key, iv );
@@ -614,6 +642,7 @@ namespace RedisAdmin
                 }
                 catch
                 {
+                    MessageBox.Show( @"Encryption failed for input text." );
                 }
             }
 
@@ -651,6 +680,7 @@ namespace RedisAdmin
                 }
                 catch
                 {
+                    MessageBox.Show( @"Decryption failed for input cipher." );
                 }
             }
 
@@ -713,18 +743,26 @@ namespace RedisAdmin
 
         private void flushAllKeys_Click( object sender, EventArgs e )
         {
-            if( MessageBox.Show( @"Are you sure you want to flush all keys? This will permanently delete everything with no way to recover the data.", @"Please confirm", MessageBoxButtons.YesNo ) == System.Windows.Forms.DialogResult.Yes )
+            if( string.IsNullOrEmpty( this.UrnFilterDialog.Filter ) )
             {
-                this.FlushAll();
+                if( MessageBox.Show( @"Are you sure you want to flush all keys? This will permanently delete everything with no way to recover the data.", @"Please confirm", MessageBoxButtons.YesNo ) == System.Windows.Forms.DialogResult.Yes )
+                {
+                    this.FlushAll();
+                }
+            }
+            else
+            {
+                if( MessageBox.Show( @"Are you sure you want to flush all unfiltered keys? This will permanently delete all visible keys with no way to recover the data.", @"Please confirm", MessageBoxButtons.YesNo ) == System.Windows.Forms.DialogResult.Yes )
+                {
+                    this.FlushUnfiltered();
+                }
             }
         }
 
         private void keyList_AfterSelect( object sender, TreeViewEventArgs e )
         {
             if( this.IgnoreEvents ) return;
-            var key = this.GetSelectedUrn();
-            if( key == null ) return;
-            this.LoadUrnValue( key );
+            this.LoadUrnValue( this.GetSelectedUrn() );
         }
 
         private void deleteKey_Click( object sender, EventArgs e )
